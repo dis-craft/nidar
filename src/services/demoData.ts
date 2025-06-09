@@ -13,8 +13,58 @@ export interface MissionState {
   mode: 'test' | 'live';
   drone: 'scan' | 'spray';
   stream: StreamPoint[];
-  status?: string;
+  status: string;
 }
+
+// Demo coordinates around a central point
+const CENTER_LAT = 13.0707; // Hoskote latitude
+const CENTER_LNG = 77.7982; // Hoskote longitude
+const GRID_SIZE = 0.0001; // Grid size in degrees
+
+// Generate demo data points
+export const generateDemoData = (numPoints: number = 50): StreamPoint[] => {
+  const points: StreamPoint[] = [];
+  const gridSize = Math.ceil(Math.sqrt(numPoints));
+  const latStep = GRID_SIZE;
+  const lngStep = GRID_SIZE;
+
+  for (let i = 0; i < numPoints; i++) {
+    const row = Math.floor(i / gridSize);
+    const col = i % gridSize;
+    const lat = CENTER_LAT + (row * latStep);
+    const lng = CENTER_LNG + (col * lngStep);
+    
+    points.push({
+      timestamp: Date.now() + i * 1000,
+      lat,
+      lng,
+      stressScore: Math.random(),
+      imageUrl: `https://demo.storage/farm/image${i + 1}.png`
+    });
+  }
+
+  return points;
+};
+
+// Initialize demo mission state
+export const initialMissionState: MissionState = {
+  mode: 'test',
+  drone: 'scan',
+  stream: [],
+  status: 'Ready to start mission'
+};
+
+// Helper function to update mission state
+export const updateMissionState = (
+  currentState: MissionState,
+  updates: Partial<MissionState>
+): MissionState => {
+  return {
+    ...currentState,
+    ...updates,
+    stream: updates.stream || currentState.stream
+  };
+};
 
 // Demo coordinates around a central point
 const generateDemoPoints = (centerLat: number, centerLng: number, count: number): StreamPoint[] => {

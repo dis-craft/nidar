@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, Polygon, useMap, Rectangle, ZoomControl, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { LatLngExpression, LatLngBounds } from 'leaflet';
+import { LatLngBounds, LatLngTuple } from 'leaflet';
 import { StreamPoint } from '../services/demoData';
 
 interface MapCanvasProps {
@@ -13,7 +13,7 @@ interface MapCanvasProps {
 }
 
 // Hoskote coordinates (approximately)
-const HOSKOTE_CENTER = [13.0707, 77.7982];
+const HOSKOTE_CENTER: LatLngTuple = [13.0707, 77.7982];
 
 // Calculate 2-acre plot bounds (1 acre ≈ 4046.86 square meters)
 const ACRE_TO_METERS = 4046.86;
@@ -35,7 +35,7 @@ const STRESS_LEVELS = {
 };
 
 // Component to handle map zoom changes
-const MapController = ({ activeDrone }: { activeDrone: 'scan' | 'spray' }) => {
+const MapController = () => {
   const map = useMap();
 
   useEffect(() => {
@@ -51,6 +51,8 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
   const [currentPoint, setCurrentPoint] = useState<StreamPoint | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [visiblePoints, setVisiblePoints] = useState<StreamPoint[]>([]);
+  const [animationFrame, setAnimationFrame] = useState(0);
 
   const getStressColor = (score: number) => {
     if (score > STRESS_LEVELS.HIGH.min) return STRESS_LEVELS.HIGH.color;
@@ -64,8 +66,23 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
     return STRESS_LEVELS.LOW.label;
   };
 
-  const scanPoints = stream.filter(point => point.stressScore <= 0.5);
-  const sprayPoints = stream.filter(point => point.stressScore > 0.5);
+  // Animate points appearance
+  useEffect(() => {
+    if (!missionStarted || stream.length === 0) return;
+
+    const animatePoints = () => {
+      if (animationFrame < stream.length) {
+        setVisiblePoints(prev => [...prev, stream[animationFrame]]);
+        setAnimationFrame(prev => prev + 1);
+      }
+    };
+
+    const interval = setInterval(animatePoints, 500); // Adjust timing as needed
+    return () => clearInterval(interval);
+  }, [missionStarted, stream, animationFrame]);
+
+  const scanPoints = visiblePoints.filter(point => point.stressScore <= 0.5);
+  const sprayPoints = visiblePoints.filter(point => point.stressScore > 0.5);
 
   // Generate demo points within the plot bounds
   const generateDemoPoints = () => {
@@ -123,7 +140,7 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        <MapController activeDrone={activeDrone} />
+        <MapController />
         <ZoomControl position="bottomright" />
         
         {/* Only show plot and points after mission starts */}
@@ -149,10 +166,10 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
             </Rectangle>
 
             {/* Points */}
-            {isTestMode && stream.map((point, index) => (
+            {isTestMode && visiblePoints.map((point) => (
               <CircleMarker
                 key={point.timestamp}
-                center={[point.lat, point.lng]}
+                center={[point.lat, point.lng] as LatLngTuple}
                 radius={8}
                 pathOptions={{
                   color: getStressColor(point.stressScore),
@@ -173,10 +190,10 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
               </CircleMarker>
             ))}
             
-            {activeDrone === 'scan' && scanPoints.map((point, index) => (
+            {activeDrone === 'scan' && scanPoints.map((point) => (
               <CircleMarker
                 key={point.timestamp}
-                center={[point.lat, point.lng]}
+                center={[point.lat, point.lng] as LatLngTuple}
                 radius={8}
                 pathOptions={{
                   color: getStressColor(point.stressScore),
@@ -196,10 +213,10 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
 
             {activeDrone === 'spray' && (
               <>
-                {scanPoints.map((point, index) => (
+                {scanPoints.map((point) => (
                   <CircleMarker
                     key={point.timestamp}
-                    center={[point.lat, point.lng]}
+                    center={[point.lat, point.lng] as LatLngTuple}
                     radius={6}
                     pathOptions={{
                       color: getStressColor(point.stressScore),
@@ -210,7 +227,7 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
                 ))}
                 {sprayPoints.length > 0 && (
                   <Polyline
-                    positions={sprayPoints.map(point => [point.lat, point.lng])}
+                    positions={sprayPoints.map(point => [point.lat, point.lng] as LatLngTuple)}
                     pathOptions={{
                       color: '#3b82f6',
                       weight: 3,
@@ -226,8 +243,8 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
         {/* Legend */}
         <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-[1000]">
           <h3 className="font-bold mb-2">Stress Levels</h3>
-          {Object.values(STRESS_LEVELS).map((level, index) => (
-            <div key={index} className="flex items-center gap-2 mb-1">
+          {Object.values(STRESS_LEVELS).map((level) => (
+            <div key={level.label} className="flex items-center gap-2 mb-1">
               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: level.color }}></div>
               <span className="text-sm">{level.label}</span>
             </div>
@@ -239,6 +256,22 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
       {statusMessage && (
         <div className="fixed left-1/2 top-20 transform -translate-x-1/2 bg-white px-6 py-4 rounded-xl shadow-2xl border border-gray-200 z-[2000] text-lg font-semibold animate-fade-in-out transition-all duration-500">
           {statusMessage}
+        </div>
+      )}
+
+      {/* Progress indicator */}
+      {missionStarted && (
+        <div className="absolute bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-semibold">Scanning Progress</span>
+            <span>{Math.round((visiblePoints.length / stream.length) * 100)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(visiblePoints.length / stream.length) * 100}%` }}
+            />
+          </div>
         </div>
       )}
     </div>

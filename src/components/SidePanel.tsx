@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { startDemoStream, stopDemoStream, resetDemoStream, MissionState } from '../services/demoData';
 import StatusTimeline from './StatusTimeline';
 import LiveLog from './LiveLog';
+import { MissionState as TypesMissionState } from '../services/types';
 
 interface SidePanelProps {
   isTestMode: boolean;
@@ -9,7 +10,7 @@ interface SidePanelProps {
   setActiveDrone: (drone: 'scan' | 'spray') => void;
   isPaused: boolean;
   setIsPaused: (paused: boolean) => void;
-  missionState: MissionState;
+  missionState: TypesMissionState;
 }
 
 const SidePanel = ({ 
