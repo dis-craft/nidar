@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, useMap, Rectangle, ZoomControl, Popup } from 'react-leaflet';
+import HeatmapLayer from './HeatmapLayer';
 import 'leaflet/dist/leaflet.css';
 import { LatLngBounds, LatLngTuple } from 'leaflet';
 import { StreamPoint } from '../services/demoData';
+import './MapCanvas.css';
 
 interface MapCanvasProps {
   isTestMode: boolean;
@@ -45,10 +47,71 @@ const MapController = () => {
   return null;
 };
 
+// Helper to generate dummy heatmap points
+const generateDummyHeatmapPoints = (bounds: LatLngBounds, count: number = 100) => {
+  const points: { lat: number; lng: number; stressScore: number }[] = [];
+  const latMin = bounds.getSouth();
+  const latMax = bounds.getNorth();
+  const lngMin = bounds.getWest();
+  const lngMax = bounds.getEast();
+  for (let i = 0; i < count; i++) {
+    const lat = latMin + Math.random() * (latMax - latMin);
+    const lng = lngMin + Math.random() * (lngMax - lngMin);
+    const stressScore = Math.random();
+    points.push({ lat, lng, stressScore });
+  }
+  return points;
+};
+
+// Helper to sort points left-to-right (by lng, then lat)
+const sortPoints = (points: { lat: number; lng: number; stressScore: number; timestamp?: number }[]) => {
+  return [...points].sort((a, b) => a.lng - b.lng || a.lat - b.lat);
+};
+
 const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMessage }: MapCanvasProps) => {
   const mapRef = useRef(null);
-  const [visiblePoints, setVisiblePoints] = useState<StreamPoint[]>([]);
-  const [animationFrame, setAnimationFrame] = useState(0);
+  const [scanIndex, setScanIndex] = useState(0);
+  const [sprayIndex, setSprayIndex] = useState(0);
+  const [mode, setMode] = useState<'scan' | 'spray'>('scan');
+
+  // Sort points for consistent scan/spray order
+  const sortedPoints = sortPoints(stream);
+
+  // Animate scan and spray progress
+  useEffect(() => {
+    if (!missionStarted || sortedPoints.length === 0) return;
+    let interval: ReturnType<typeof setInterval>;
+    if (activeDrone === 'scan') {
+      setMode('scan');
+      setSprayIndex(0);
+      interval = setInterval(() => {
+        setScanIndex((prev) => {
+          if (prev < sortedPoints.length) return prev + 1;
+          clearInterval(interval);
+          return prev;
+        });
+      }, 300); // Adjust speed as needed
+    } else if (activeDrone === 'spray') {
+      setMode('spray');
+      setScanIndex(sortedPoints.length);
+      interval = setInterval(() => {
+        setSprayIndex((prev) => {
+          if (prev < sortedPoints.length) return prev + 1;
+          clearInterval(interval);
+          return prev;
+        });
+      }, 300); // Adjust speed as needed
+    }
+    return () => clearInterval(interval);
+  }, [missionStarted, activeDrone, sortedPoints.length]);
+
+  // Heatmap points logic
+  let heatmapPoints: { lat: number; lng: number; stressScore: number; timestamp?: number }[] = [];
+  if (mode === 'scan') {
+    heatmapPoints = sortedPoints.slice(0, scanIndex);
+  } else if (mode === 'spray') {
+    heatmapPoints = sortedPoints.slice(sprayIndex);
+  }
 
   const getStressColor = (score: number) => {
     if (score > STRESS_LEVELS.HIGH.min) return STRESS_LEVELS.HIGH.color;
@@ -61,24 +124,6 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
     if (score > STRESS_LEVELS.MEDIUM.min) return STRESS_LEVELS.MEDIUM.label;
     return STRESS_LEVELS.LOW.label;
   };
-
-  // Animate points appearance
-  useEffect(() => {
-    if (!missionStarted || stream.length === 0) return;
-
-    const animatePoints = () => {
-      if (animationFrame < stream.length) {
-        setVisiblePoints(prev => [...prev, stream[animationFrame]]);
-        setAnimationFrame(prev => prev + 1);
-      }
-    };
-
-    const interval = setInterval(animatePoints, 500); // Adjust timing as needed
-    return () => clearInterval(interval);
-  }, [missionStarted, stream, animationFrame]);
-
-  const scanPoints = visiblePoints.filter(point => point.stressScore <= 0.5);
-  const sprayPoints = visiblePoints.filter(point => point.stressScore > 0.5);
 
   // Handle point selection
   const handlePointClick = () => {
@@ -117,19 +162,28 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
                 fillOpacity: 0
               }}
             >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold mb-2">2-Acre Plot</h3>
+              <Popup className="custom-status-popup" offset={[0, -30]}>
+                <div className="p-1 text-xs text-left max-w-[140px]">
+                  <h3 className="font-bold mb-1 text-xs">2-Acre Plot</h3>
                   <p>Location: Hoskote</p>
                   <p>Area: 2 acres</p>
                 </div>
               </Popup>
             </Rectangle>
 
+            {/* Heatmap Layer */}
+            <HeatmapLayer
+              points={heatmapPoints}
+              radius={20}
+              blur={15}
+              max={1}
+              minOpacity={0.3}
+            />
+
             {/* Points */}
-            {isTestMode && visiblePoints.map((point) => (
+            {isTestMode && sortedPoints.map((point, idx) => (
               <CircleMarker
-                key={point.timestamp}
+                key={point.timestamp ?? `${point.lat},${point.lng},${idx}`}
                 center={[point.lat, point.lng] as LatLngTuple}
                 radius={8}
                 pathOptions={{
@@ -151,9 +205,9 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
               </CircleMarker>
             ))}
             
-            {activeDrone === 'scan' && scanPoints.map((point) => (
+            {activeDrone === 'scan' && sortedPoints.slice(0, scanIndex).map((point, idx) => (
               <CircleMarker
-                key={point.timestamp}
+                key={point.timestamp ?? `${point.lat},${point.lng},${idx}`}
                 center={[point.lat, point.lng] as LatLngTuple}
                 radius={8}
                 pathOptions={{
@@ -174,9 +228,9 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
 
             {activeDrone === 'spray' && (
               <>
-                {scanPoints.map((point) => (
+                {sortedPoints.slice(0, scanIndex).map((point, idx) => (
                   <CircleMarker
-                    key={point.timestamp}
+                    key={point.timestamp ?? `${point.lat},${point.lng},${idx}`}
                     center={[point.lat, point.lng] as LatLngTuple}
                     radius={6}
                     pathOptions={{
@@ -186,9 +240,9 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
                     }}
                   />
                 ))}
-                {sprayPoints.length > 0 && (
+                {sortedPoints.slice(scanIndex).length > 0 && (
                   <Polyline
-                    positions={sprayPoints.map(point => [point.lat, point.lng] as LatLngTuple)}
+                    positions={sortedPoints.slice(scanIndex).map(point => [point.lat, point.lng] as LatLngTuple)}
                     pathOptions={{
                       color: '#3b82f6',
                       weight: 3,
@@ -225,12 +279,12 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
         <div className="absolute bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold">Scanning Progress</span>
-            <span>{Math.round((visiblePoints.length / stream.length) * 100)}%</span>
+            <span>{Math.round((scanIndex / sortedPoints.length) * 100)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(visiblePoints.length / stream.length) * 100}%` }}
+              style={{ width: `${(scanIndex / sortedPoints.length) * 100}%` }}
             />
           </div>
         </div>

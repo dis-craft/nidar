@@ -1,0 +1,16 @@
+.custom-status-popup .leaflet-popup-content-wrapper {
+  padding: 4px 8px;
+  font-size: 12px;
+  max-width: 140px;
+  min-width: 80px;
+  text-align: left;
+}
+
+.custom-status-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+}
+
+.custom-status-popup .leaflet-popup-tip {
+  left: 10px !important;
+} 
