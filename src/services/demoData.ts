@@ -128,7 +128,6 @@ export const startDemoStream = (centerLat: number, centerLng: number) => {
   demoInterval = window.setInterval(() => {
     if (currentIndex < scanPoints.length) {
       // Scanning phase
-      const currentPoint = scanPoints[currentIndex];
       missionRef.set({
         mode: 'test',
         drone: 'scan',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Polyline, Polygon, useMap, Rectangle, ZoomControl, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Polyline, useMap, Rectangle, ZoomControl, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LatLngBounds, LatLngTuple } from 'leaflet';
 import { StreamPoint } from '../services/demoData';
@@ -47,10 +47,6 @@ const MapController = () => {
 
 const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMessage }: MapCanvasProps) => {
   const mapRef = useRef(null);
-  const [selectedArea, setSelectedArea] = useState<LatLngBounds | null>(null);
-  const [currentPoint, setCurrentPoint] = useState<StreamPoint | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [popupMessage, setPopupMessage] = useState('');
   const [visiblePoints, setVisiblePoints] = useState<StreamPoint[]>([]);
   const [animationFrame, setAnimationFrame] = useState(0);
 
@@ -84,41 +80,9 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
   const scanPoints = visiblePoints.filter(point => point.stressScore <= 0.5);
   const sprayPoints = visiblePoints.filter(point => point.stressScore > 0.5);
 
-  // Generate demo points within the plot bounds
-  const generateDemoPoints = () => {
-    const points: StreamPoint[] = [];
-    const numPoints = 50;
-    const gridSize = Math.ceil(Math.sqrt(numPoints));
-    const latStep = (PLOT_BOUNDS.getNorth() - PLOT_BOUNDS.getSouth()) / gridSize;
-    const lngStep = (PLOT_BOUNDS.getEast() - PLOT_BOUNDS.getWest()) / gridSize;
-
-    for (let i = 0; i < numPoints; i++) {
-      const row = Math.floor(i / gridSize);
-      const col = i % gridSize;
-      const lat = PLOT_BOUNDS.getSouth() + (row + 0.5) * latStep;
-      const lng = PLOT_BOUNDS.getWest() + (col + 0.5) * lngStep;
-      
-      points.push({
-        timestamp: Date.now() + i * 1000,
-        lat,
-        lng,
-        stressScore: Math.random(),
-        imageUrl: `https://demo.storage/farm/image${i + 1}.png`
-      });
-    }
-    return points;
-  };
-
-  const demoPoints = generateDemoPoints();
-
-  // Show popup message
-  const showStatusMessage = (message: string) => {
-    // Implementation removed as it's not being used
-  };
-
   // Handle point selection
-  const handlePointClick = (point: StreamPoint) => {
-    showStatusMessage(`Stress Level: ${getStressLabel(point.stressScore)}`);
+  const handlePointClick = () => {
+    // Implementation removed as it's not being used
   };
 
   return (
@@ -174,7 +138,7 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
                   fillOpacity: 0.7,
                 }}
                 eventHandlers={{
-                  click: () => handlePointClick(point)
+                  click: () => handlePointClick()
                 }}
               >
                 <Popup>

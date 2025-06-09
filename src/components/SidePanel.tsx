@@ -7,7 +7,6 @@ import { MissionState } from '../services/types';
 interface SidePanelProps {
   isTestMode: boolean;
   activeDrone: 'scan' | 'spray';
-  setActiveDrone: (drone: 'scan' | 'spray') => void;
   isPaused: boolean;
   setIsPaused: (paused: boolean) => void;
   missionState: MissionState;
@@ -16,7 +15,6 @@ interface SidePanelProps {
 const SidePanel = ({ 
   isTestMode, 
   activeDrone, 
-  setActiveDrone,
   isPaused,
   setIsPaused,
   missionState 

@@ -81,7 +81,6 @@ function App() {
           <SidePanel 
             isTestMode={isTestMode}
             activeDrone={activeDrone}
-            setActiveDrone={setActiveDrone}
             isPaused={isPaused}
             setIsPaused={setIsPaused}
             missionState={missionState}
