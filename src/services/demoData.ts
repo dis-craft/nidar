@@ -13,67 +13,108 @@ export interface MissionState {
   mode: 'test' | 'live';
   drone: 'scan' | 'spray';
   stream: StreamPoint[];
+  status?: string;
 }
 
 // Demo coordinates around a central point
 const generateDemoPoints = (centerLat: number, centerLng: number, count: number): StreamPoint[] => {
-  return Array.from({ length: count }, (_, i) => ({
-    timestamp: Date.now() + i * 1000,
-    lat: centerLat + (Math.random() - 0.5) * 0.01,
-    lng: centerLng + (Math.random() - 0.5) * 0.01,
-    stressScore: Math.random(),
-    imageUrl: `https://demo.storage/farm/image${i + 1}.png`
-  }));
+  const points: StreamPoint[] = [];
+  const gridSize = Math.ceil(Math.sqrt(count));
+  const latStep = 0.0001; // Approximately 11 meters
+  const lngStep = 0.0001;
+
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / gridSize);
+    const col = i % gridSize;
+    const lat = centerLat + (row - gridSize/2) * latStep;
+    const lng = centerLng + (col - gridSize/2) * lngStep;
+    
+    points.push({
+      timestamp: Date.now() + i * 1000,
+      lat,
+      lng,
+      stressScore: Math.random(),
+      imageUrl: `https://demo.storage/farm/image${i + 1}.png`
+    });
+  }
+  return points;
 };
 
 // Demo spray path points
 const generateSprayPath = (points: StreamPoint[]): StreamPoint[] => {
-  return points.map(point => ({
-    ...point,
-    timestamp: point.timestamp + 5000, // 5 seconds after scan
-    stressScore: point.stressScore > 0.5 ? 0.9 : 0.1 // High stress areas get sprayed
-  }));
+  return points
+    .filter(point => point.stressScore > 0.5)
+    .map(point => ({
+      ...point,
+      timestamp: point.timestamp + 5000, // 5 seconds after scan
+      stressScore: 0.1 // Reset stress score after spraying
+    }));
 };
 
 let demoInterval: number | null = null;
+let currentIndex = 0;
+let scanPoints: StreamPoint[] = [];
+let sprayPoints: StreamPoint[] = [];
 
 export const startDemoStream = (centerLat: number, centerLng: number) => {
   const missionRef = database.ref('missions/current');
+  
+  // Reset state
+  currentIndex = 0;
+  scanPoints = generateDemoPoints(centerLat, centerLng, 50);
+  sprayPoints = generateSprayPath(scanPoints);
   
   // Initial state
   const initialState: MissionState = {
     mode: 'test',
     drone: 'scan',
-    stream: []
+    stream: [],
+    status: 'Starting scan mission...'
   };
   
   missionRef.set(initialState);
 
-  // Generate initial points
-  const scanPoints = generateDemoPoints(centerLat, centerLng, 20);
-  const sprayPoints = generateSprayPath(scanPoints);
-  
-  let currentIndex = 0;
-  
   // Stream points every 500ms
   demoInterval = window.setInterval(() => {
     if (currentIndex < scanPoints.length) {
+      // Scanning phase
       const currentPoint = scanPoints[currentIndex];
       missionRef.set({
         mode: 'test',
         drone: 'scan',
-        stream: scanPoints.slice(0, currentIndex + 1)
+        stream: scanPoints.slice(0, currentIndex + 1),
+        status: `Scanning point ${currentIndex + 1}/${scanPoints.length}`
       });
       currentIndex++;
-    } else if (currentIndex < scanPoints.length + sprayPoints.length) {
-      const sprayIndex = currentIndex - scanPoints.length;
+    } else if (currentIndex === scanPoints.length) {
+      // Transition to spraying
       missionRef.set({
         mode: 'test',
         drone: 'spray',
-        stream: [...scanPoints, ...sprayPoints.slice(0, sprayIndex + 1)]
+        stream: scanPoints,
+        status: 'Scan complete. Preparing for spray mission...'
       });
       currentIndex++;
+    } else if (currentIndex < scanPoints.length + sprayPoints.length + 1) {
+      // Spraying phase
+      const sprayIndex = currentIndex - scanPoints.length - 1;
+      if (sprayIndex < sprayPoints.length) {
+        missionRef.set({
+          mode: 'test',
+          drone: 'spray',
+          stream: [...scanPoints, ...sprayPoints.slice(0, sprayIndex + 1)],
+          status: `Spraying point ${sprayIndex + 1}/${sprayPoints.length}`
+        });
+      }
+      currentIndex++;
     } else {
+      // Mission complete
+      missionRef.set({
+        mode: 'test',
+        drone: 'scan',
+        stream: [...scanPoints, ...sprayPoints],
+        status: 'Mission complete! All areas treated.'
+      });
       stopDemoStream();
     }
   }, 500);
@@ -92,6 +133,7 @@ export const resetDemoStream = () => {
   missionRef.set({
     mode: 'test',
     drone: 'scan',
-    stream: []
+    stream: [],
+    status: 'Mission reset'
   });
 }; 

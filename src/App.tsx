@@ -29,7 +29,8 @@ function App() {
   const [missionState, setMissionState] = useState<MissionState>({
     mode: 'test',
     drone: 'scan',
-    stream: []
+    stream: [],
+    status: ''
   });
   const [isPaused, setIsPaused] = useState(false);
 
@@ -44,7 +45,8 @@ function App() {
         setMissionState({
           mode: data.mode || 'test',
           drone: data.drone || 'scan',
-          stream: data.stream || []
+          stream: data.stream || [],
+          status: data.status || ''
         });
         setActiveDrone(data.drone || 'scan');
         if (data.stream && data.stream.length > 0) {
@@ -58,6 +60,9 @@ function App() {
       missionRef.off('value', unsubscribe);
     };
   }, []);
+
+  const missionStarted = missionState.stream && missionState.stream.length > 0;
+  const statusMessage = missionState.status || '';
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden">
@@ -83,11 +88,13 @@ function App() {
           />
         </motion.div>
         
-        <div className="flex-1 relative">
-          <MapCanvas 
+        <div className="flex-1 relative min-h-[400px] min-w-[300px]">
+          <MapCanvas
             isTestMode={isTestMode}
             activeDrone={activeDrone}
             stream={missionState.stream || []}
+            missionStarted={missionStarted}
+            statusMessage={statusMessage}
           />
           <AnimatePresence>
             {missionState.stream && missionState.stream.length > 0 && (

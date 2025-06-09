@@ -10,4 +10,5 @@ export interface MissionState {
   mode: 'test' | 'live';
   drone: 'scan' | 'spray';
   stream: StreamPoint[];
+  status?: string;
 } 
