@@ -90,7 +90,7 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
       <MapContainer
         center={HOSKOTE_CENTER}
         zoom={15}
-        className="h-full w-full min-h-[400px] min-w-[300px] rounded-lg shadow-lg"
+        className="h-[50vh] lg:h-full w-full min-h-[300px] min-w-[300px] rounded-lg shadow-lg"
         ref={mapRef}
         zoomControl={false}
         dragging={true}
@@ -202,12 +202,12 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
         )}
 
         {/* Legend */}
-        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-[1000]">
-          <h3 className="font-bold mb-2">Stress Levels</h3>
+        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-[1000] max-w-[200px]">
+          <h3 className="font-bold mb-2 text-sm lg:text-base">Stress Levels</h3>
           {Object.values(STRESS_LEVELS).map((level) => (
             <div key={level.label} className="flex items-center gap-2 mb-1">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: level.color }}></div>
-              <span className="text-sm">{level.label}</span>
+              <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full" style={{ backgroundColor: level.color }}></div>
+              <span className="text-xs lg:text-sm">{level.label}</span>
             </div>
           ))}
         </div>

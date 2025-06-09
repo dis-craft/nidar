@@ -72,11 +72,11 @@ function App() {
         activeDrone={activeDrone}
       />
       
-      <div className="flex-1 flex flex-col md:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row">
         <motion.div
           initial={{ x: -300 }}
           animate={{ x: 0 }}
-          className="w-full md:w-80 bg-white shadow-lg flex flex-col"
+          className="w-full lg:w-80 bg-white shadow-lg flex flex-col order-2 lg:order-1"
         >
           <SidePanel 
             isTestMode={isTestMode}
@@ -87,7 +87,7 @@ function App() {
           />
         </motion.div>
         
-        <div className="flex-1 relative min-h-[400px] min-w-[300px]">
+        <div className="flex-1 relative min-h-[400px] min-w-[300px] order-1 lg:order-2">
           <MapCanvas
             isTestMode={isTestMode}
             activeDrone={activeDrone}
