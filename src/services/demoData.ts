@@ -1,4 +1,5 @@
 import { StreamPoint, MissionState } from './types';
+import { database } from './firebase';
 
 export interface StreamPoint {
   timestamp: number;
@@ -37,7 +38,7 @@ const generateSprayPath = (points: StreamPoint[]): StreamPoint[] => {
 let demoInterval: number | null = null;
 
 export const startDemoStream = (centerLat: number, centerLng: number) => {
-  const missionRef = window.firebase.database().ref('missions/current');
+  const missionRef = database.ref('missions/current');
   
   // Initial state
   const initialState: MissionState = {
@@ -87,7 +88,7 @@ export const stopDemoStream = () => {
 
 export const resetDemoStream = () => {
   stopDemoStream();
-  const missionRef = window.firebase.database().ref('missions/current');
+  const missionRef = database.ref('missions/current');
   missionRef.set({
     mode: 'test',
     drone: 'scan',

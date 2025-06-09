@@ -1,18 +1,19 @@
-// Firebase configuration
+// src/services/firebase.ts
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyDjrkqCiDrNI3168kOpkYMSlSAjH8zaoU0",
+  authDomain: "nidar-db.firebaseapp.com",
+  projectId: "nidar-db",
+  storageBucket: "nidar-db.firebasestorage.app",
+  messagingSenderId: "503739888226",
+  appId: "1:503739888226:web:2465ab1981a8f6bea0173b",
+  measurementId: "G-3RE9KDPYXR",
+  databaseURL: "https://nidar-db-default-rtdb.firebaseio.com"
 };
 
-// Initialize Firebase
-const app = window.firebase.initializeApp(firebaseConfig);
-const analytics = window.firebase.analytics(app);
-const database = window.firebase.database(app);
-const storage = window.firebase.storage(app);
+// Initialize Firebase App + Analytics + Database
+const app = firebase.initializeApp(firebaseConfig);
+const analytics = firebase.analytics(app);
+const database = firebase.database(app);
 
-export { app, analytics, database, storage }; 
+export { app, analytics, database };

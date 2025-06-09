@@ -1,11 +1,26 @@
+// src/App.tsx
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { database } from './services/firebase';
 import { MissionState } from './services/types';
 import Header from './components/Header';
 import SidePanel from './components/SidePanel';
 import MapCanvas from './components/MapCanvas';
 import ImageFeed from './components/ImageFeed';
 import SpinnerOverlay from './components/SpinnerOverlay';
+
+// Add Firebase types
+declare global {
+  interface Window {
+    firebase: any;
+  }
+}
+
+interface DataSnapshot {
+  val(): any;
+  exists(): boolean;
+  key: string | null;
+}
 
 function App() {
   const [isTestMode, setIsTestMode] = useState(true);
@@ -19,18 +34,26 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    const missionRef = window.firebase.database().ref('missions/current');
-    const unsubscribe = missionRef.on('value', (snapshot) => {
-      const data = snapshot.val() as MissionState;
+    // Create a reference to /missions/current using the CDN version
+    const missionRef = database.ref('missions/current');
+
+    // Subscribe
+    const unsubscribe = missionRef.on('value', (snapshot: DataSnapshot) => {
+      const data = snapshot.val() as MissionState | null;
       if (data) {
-        setMissionState(data);
-        setActiveDrone(data.drone);
-        if (data.stream.length > 0) {
+        setMissionState({
+          mode: data.mode || 'test',
+          drone: data.drone || 'scan',
+          stream: data.stream || []
+        });
+        setActiveDrone(data.drone || 'scan');
+        if (data.stream && data.stream.length > 0) {
           setIsLoading(false);
         }
       }
     });
 
+    // Cleanup
     return () => {
       missionRef.off('value', unsubscribe);
     };
@@ -64,10 +87,10 @@ function App() {
           <MapCanvas 
             isTestMode={isTestMode}
             activeDrone={activeDrone}
-            stream={missionState.stream}
+            stream={missionState.stream || []}
           />
           <AnimatePresence>
-            {missionState.stream.length > 0 && (
+            {missionState.stream && missionState.stream.length > 0 && (
               <motion.div
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
@@ -85,4 +108,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
