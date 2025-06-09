@@ -47,22 +47,6 @@ const MapController = () => {
   return null;
 };
 
-// Helper to generate dummy heatmap points
-const generateDummyHeatmapPoints = (bounds: LatLngBounds, count: number = 100) => {
-  const points: { lat: number; lng: number; stressScore: number }[] = [];
-  const latMin = bounds.getSouth();
-  const latMax = bounds.getNorth();
-  const lngMin = bounds.getWest();
-  const lngMax = bounds.getEast();
-  for (let i = 0; i < count; i++) {
-    const lat = latMin + Math.random() * (latMax - latMin);
-    const lng = lngMin + Math.random() * (lngMax - lngMin);
-    const stressScore = Math.random();
-    points.push({ lat, lng, stressScore });
-  }
-  return points;
-};
-
 // Helper to sort points left-to-right (by lng, then lat)
 const sortPoints = (points: { lat: number; lng: number; stressScore: number; timestamp?: number }[]) => {
   return [...points].sort((a, b) => a.lng - b.lng || a.lat - b.lat);
