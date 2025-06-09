@@ -1,4 +1,4 @@
-import { StreamPoint, MissionState } from './types';
+// import { StreamPoint, MissionState } from './types';
 import { database } from './firebase';
 
 export interface StreamPoint {

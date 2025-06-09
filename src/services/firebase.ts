@@ -19,11 +19,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-if (!window.firebase.apps.length) {
-  window.firebase.initializeApp(firebaseConfig);
+let database: any;
+let auth: any;
+let storage: any;
+
+if (typeof window !== 'undefined' && window.firebase) {
+  if (!window.firebase.apps.length) {
+    window.firebase.initializeApp(firebaseConfig);
+  }
+  database = window.firebase.database();
+  auth = window.firebase.auth();
+  storage = window.firebase.storage();
 }
 
-// Initialize services
-export const database = window.firebase.database();
-export const auth = window.firebase.auth();
-export const storage = window.firebase.storage();
+export { database, auth, storage };

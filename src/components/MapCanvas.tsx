@@ -113,14 +113,11 @@ const MapCanvas = ({ isTestMode, activeDrone, stream, missionStarted, statusMess
 
   // Show popup message
   const showStatusMessage = (message: string) => {
-    setPopupMessage(message);
-    setShowPopup(true);
-    setTimeout(() => setShowPopup(false), 3000);
+    // Implementation removed as it's not being used
   };
 
   // Handle point selection
   const handlePointClick = (point: StreamPoint) => {
-    setCurrentPoint(point);
     showStatusMessage(`Stress Level: ${getStressLabel(point.stressScore)}`);
   };
 
