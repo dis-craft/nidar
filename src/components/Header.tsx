@@ -11,7 +11,7 @@ const Header = ({ isTestMode, setIsTestMode, activeDrone }: HeaderProps) => {
     <header className="bg-white shadow-md px-6 py-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
         {/* <img src="/logo.png" alt="Logo" className="h-8 w-8" /> */}
-        <h1 className="text-xl font-bold text-gray-800">Precision Farming Dashboard</h1>
+        <h1 className="text-xl font-bold text-gray-800">Precision Agriculture Dashboard</h1>
       </div>
 
       <div className="flex items-center space-x-6">
